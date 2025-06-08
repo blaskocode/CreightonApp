@@ -1,0 +1,81 @@
+import type { Cycle } from "./types"
+
+// Mock data for current cycle
+export function getCurrentCycle(): Cycle {
+  return {
+    id: "current",
+    startDate: "2025-05-10",
+    endDate: null,
+    currentDay: 28,
+    days: [
+      { dayNumber: 1, date: "2025-05-10", observation: "H" },
+      { dayNumber: 2, date: "2025-05-11", observation: "H" },
+      { dayNumber: 3, date: "2025-05-12", observation: "M" },
+      { dayNumber: 4, date: "2025-05-13", observation: "L" },
+      { dayNumber: 5, date: "2025-05-14", observation: "VL" },
+      { dayNumber: 6, date: "2025-05-15", observation: "B 2 X1" },
+      { dayNumber: 7, date: "2025-05-16", observation: "0" },
+      { dayNumber: 8, date: "2025-05-17", observation: "0" },
+      { dayNumber: 9, date: "2025-05-18", observation: "2" },
+      { dayNumber: 10, date: "2025-05-19", observation: "2 W" },
+      { dayNumber: 11, date: "2025-05-20", observation: "4" },
+      { dayNumber: 12, date: "2025-05-21", observation: "6P X1" },
+      { dayNumber: 13, date: "2025-05-22", observation: "8C X2" },
+      { dayNumber: 14, date: "2025-05-23", observation: "10KL X3" },
+      { dayNumber: 15, date: "2025-05-24", observation: "10WL AD" },
+      { dayNumber: 16, date: "2025-05-25", observation: "10SL X3" },
+      { dayNumber: 17, date: "2025-05-26", observation: "8K X2" },
+      { dayNumber: 18, date: "2025-05-27", observation: "6G X1" },
+      { dayNumber: 19, date: "2025-05-28", observation: "4" },
+      { dayNumber: 20, date: "2025-05-29", observation: "2" },
+      { dayNumber: 21, date: "2025-05-30", observation: "0" },
+      { dayNumber: 22, date: "2025-05-31", observation: "0" },
+      { dayNumber: 23, date: "2025-06-01", observation: "0" },
+      { dayNumber: 24, date: "2025-06-02", observation: "0" },
+      { dayNumber: 25, date: "2025-06-03", observation: "0" },
+      { dayNumber: 26, date: "2025-06-04", observation: "0" },
+      { dayNumber: 27, date: "2025-06-05", observation: "0" },
+      { dayNumber: 28, date: "2025-06-06", observation: null },
+    ],
+  }
+}
+
+// Mock data for previous cycle
+export function getPreviousCycle(): Cycle {
+  return {
+    id: "previous",
+    startDate: "2025-04-12",
+    endDate: "2025-05-09",
+    currentDay: 28,
+    days: [
+      { dayNumber: 1, date: "2025-04-12", observation: "H" },
+      { dayNumber: 2, date: "2025-04-13", observation: "H" },
+      { dayNumber: 3, date: "2025-04-14", observation: "M" },
+      { dayNumber: 4, date: "2025-04-15", observation: "M" },
+      { dayNumber: 5, date: "2025-04-16", observation: "L" },
+      { dayNumber: 6, date: "2025-04-17", observation: "VL" },
+      { dayNumber: 7, date: "2025-04-18", observation: "B 2 X1" },
+      { dayNumber: 8, date: "2025-04-19", observation: "0" },
+      { dayNumber: 9, date: "2025-04-20", observation: "0" },
+      { dayNumber: 10, date: "2025-04-21", observation: "2" },
+      { dayNumber: 11, date: "2025-04-22", observation: "2 W" },
+      { dayNumber: 12, date: "2025-04-23", observation: "4" },
+      { dayNumber: 13, date: "2025-04-24", observation: "6C X1" },
+      { dayNumber: 14, date: "2025-04-25", observation: "8K X2" },
+      { dayNumber: 15, date: "2025-04-26", observation: "10KL X3" },
+      { dayNumber: 16, date: "2025-04-27", observation: "10DL AD" },
+      { dayNumber: 17, date: "2025-04-28", observation: "8C X2" },
+      { dayNumber: 18, date: "2025-04-29", observation: "6G X1" },
+      { dayNumber: 19, date: "2025-04-30", observation: "4" },
+      { dayNumber: 20, date: "2025-05-01", observation: "2" },
+      { dayNumber: 21, date: "2025-05-02", observation: "0" },
+      { dayNumber: 22, date: "2025-05-03", observation: "0" },
+      { dayNumber: 23, date: "2025-05-04", observation: "0" },
+      { dayNumber: 24, date: "2025-05-05", observation: "0" },
+      { dayNumber: 25, date: "2025-05-06", observation: "0" },
+      { dayNumber: 26, date: "2025-05-07", observation: "0" },
+      { dayNumber: 27, date: "2025-05-08", observation: "0" },
+      { dayNumber: 28, date: "2025-05-09", observation: "H" },
+    ],
+  }
+}
