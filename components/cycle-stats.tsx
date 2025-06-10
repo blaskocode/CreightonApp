@@ -79,11 +79,11 @@ export default function CycleStats({ cycle }: CycleStatsProps) {
       </div>
 
       <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
-        <h4 className="font-medium mb-3">Observation Breakdown</h4>
+        <h4 className="font-medium mb-3">Cycle Breakdown</h4>
         <div className="space-y-3">
           <div>
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-slate-600 dark:text-slate-400">Period (H, M, L, VL, B)</span>
+              <span className="text-slate-600 dark:text-slate-400">Period</span>
               <span className="font-medium">{counts.period} days</span>
             </div>
             <Progress
@@ -94,7 +94,7 @@ export default function CycleStats({ cycle }: CycleStatsProps) {
 
           <div>
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-slate-600 dark:text-slate-400">Dry (0, 2, 2W, 4)</span>
+              <span className="text-slate-600 dark:text-slate-400">Dry</span>
               <span className="font-medium">{counts.dry} days</span>
             </div>
             <Progress
@@ -105,7 +105,7 @@ export default function CycleStats({ cycle }: CycleStatsProps) {
 
           <div>
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-slate-600 dark:text-slate-400">Discharge (6, 8, 10 types)</span>
+              <span className="text-slate-600 dark:text-slate-400">Discharge</span>
               <span className="font-medium">{counts.discharge} days</span>
             </div>
             <Progress

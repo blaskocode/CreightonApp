@@ -4,12 +4,22 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 export async function GET(req: NextRequest) {
-  // Fetch the most recent cycle and its observations
+  // If ?all=1, return all previous cycles
+  const url = new URL(req.url);
+  if (url.searchParams.get('all') === '1') {
+    const previousCycles = await prisma.cycle.findMany({
+      where: { NOT: { endDate: null } },
+      orderBy: { startDate: 'desc' },
+      include: { observations: true },
+    });
+    return NextResponse.json(previousCycles);
+  }
+  // Otherwise, fetch the most recent cycle and its observations
   const cycle = await prisma.cycle.findFirst({
     orderBy: { startDate: 'desc' },
     include: { observations: true },
-  })
-  return NextResponse.json(cycle)
+  });
+  return NextResponse.json(cycle);
 }
 
 export async function PATCH(req: NextRequest) {
@@ -27,17 +37,48 @@ export async function PATCH(req: NextRequest) {
   if (existing) {
     result = await prisma.observation.update({
       where: { id: existing.id },
-      data: { date: new Date(date), observation },
+      data: { date, observation },
     })
   } else {
     result = await prisma.observation.create({
       data: {
         cycleId: cycle.id,
         dayNumber,
-        date: new Date(date),
+        date,
         observation,
       },
     })
   }
   return NextResponse.json(result)
+}
+
+export async function POST(req: NextRequest) {
+  // Find the most recent cycle
+  const current = await prisma.cycle.findFirst({
+    orderBy: { startDate: 'desc' },
+    include: { observations: true }
+  });
+  if (!current) return NextResponse.json({ error: 'No current cycle' }, { status: 404 });
+
+  // Find the last filled observation date
+  const filled = current.observations.filter(o => o.observation && o.observation.trim() !== '');
+  const lastFilled = filled.length > 0 ? filled[filled.length - 1] : null;
+  const endDate = lastFilled ? new Date(lastFilled.date) : new Date(current.startDate);
+
+  // Close the current cycle
+  await prisma.cycle.update({
+    where: { id: current.id },
+    data: { endDate }
+  });
+
+  // New cycle starts the day after the last day of the previous cycle
+  const lastDate = new Date(endDate);
+  lastDate.setDate(lastDate.getDate() + 1);
+  const newStartDate = lastDate;
+
+  const newCycle = await prisma.cycle.create({
+    data: { startDate: newStartDate }
+  });
+
+  return NextResponse.json(newCycle);
 } 

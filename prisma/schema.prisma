@@ -25,6 +25,6 @@ model Observation {
   cycle        Cycle    @relation(fields: [cycleId], references: [id])
   cycleId      Int
   dayNumber    Int
-  date         DateTime
+  date         String
   observation  String?
 }

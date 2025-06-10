@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 
-export default function NewEntryForm() {
+export default function NewEntryForm({ onEntrySaved }: { onEntrySaved?: () => void | Promise<void> }) {
   const [primaryObservation, setPrimaryObservation] = useState("")
   const [specifier, setSpecifier] = useState("")
   const [frequency, setFrequency] = useState("")
@@ -61,11 +61,20 @@ export default function NewEntryForm() {
     return entry
   }
 
-  const handleSaveEntry = () => {
+  const handleSaveEntry = async () => {
     const entry = getFormattedEntry()
-    const date = selectedDate ? selectedDate.toISOString() : new Date().toISOString()
-    console.log("Saving entry:", entry, "on date:", date)
-    // Here you would typically call an API or update your state to save the entry to the chart
+    const date = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+    // Save to API
+    await fetch('/api/cycle', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        dayNumber: undefined, // You may want to calculate this based on date
+        date,
+        observation: entry
+      })
+    })
+    if (onEntrySaved) await onEntrySaved();
   }
 
   return (
