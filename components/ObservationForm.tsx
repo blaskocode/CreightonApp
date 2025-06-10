@@ -104,6 +104,11 @@ export default function ObservationForm({
     dryTypes.includes(secondaryObservation) ||
     dischargeTypes.includes(secondaryObservation)
 
+  // Specifier logic helpers
+  const drySpecifiers = ["W"]
+  const dischargeBaseSpecifiers = ["B", "C", "C/K", "G", "K", "KL", "L", "P", "R", "Y"]
+  const dischargeExtraSpecifiers = ["DL", "SL", "WL"]
+
   const handleSave = () => {
     setError("")
     if (!selectedDate) return
@@ -146,31 +151,57 @@ export default function ObservationForm({
               </TabsContent>
               <TabsContent value="dry">
                 <RadioGroup className="grid grid-cols-2 gap-2" onValueChange={setPrimaryObservation} value={primaryObservation}>
-                  {["0", "2", "2 W", "4"].map((value) => (
+                  {["0", "2", "4"].map((value) => (
                     <div key={value} className="flex items-center space-x-2">
                       <RadioGroupItem value={value} id={`dry-${value}`} />
                       <Label htmlFor={`dry-${value}`}>{value}</Label>
                     </div>
                   ))}
                 </RadioGroup>
+                {primaryObservation === "2" && (
+                  <div className="mt-2">
+                    <Label className="mb-1 block">Specifier</Label>
+                    <RadioGroup className="grid grid-cols-2 gap-2" onValueChange={setSpecifier} value={specifier}>
+                      {drySpecifiers.map((value) => (
+                        <div key={value} className="flex items-center space-x-2">
+                          <RadioGroupItem value={value} id={`dry-specifier-${value}`} />
+                          <Label htmlFor={`dry-specifier-${value}`}>{value}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="discharge">
                 <RadioGroup className="grid grid-cols-2 gap-2" onValueChange={setPrimaryObservation} value={primaryObservation}>
-                  {["6", "8", "10", "10DL", "10SL", "10WL"].map((value) => (
+                  {["6", "8", "10"].map((value) => (
                     <div key={value} className="flex items-center space-x-2">
                       <RadioGroupItem value={value} id={`discharge-${value}`} />
                       <Label htmlFor={`discharge-${value}`}>{value}</Label>
                     </div>
                   ))}
                 </RadioGroup>
-                {needsSpecifier && (
+                {primaryObservation === "10" && (
+                  <div className="mt-2">
+                    <Label className="mb-1 block">Specifier</Label>
+                    <RadioGroup className="grid grid-cols-3 gap-2" onValueChange={setSpecifier} value={specifier}>
+                      {[...dischargeBaseSpecifiers, ...dischargeExtraSpecifiers].map((value) => (
+                        <div key={value} className="flex items-center space-x-2">
+                          <RadioGroupItem value={value} id={`discharge-specifier-${value}`} />
+                          <Label htmlFor={`discharge-specifier-${value}`}>{value}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                )}
+                {(["6", "8"].includes(primaryObservation)) && (
                   <div className="mt-2">
                     <Label className="mb-1 block">Specifier</Label>
                     <RadioGroup className="grid grid-cols-5 gap-2" onValueChange={setSpecifier} value={specifier}>
-                      {["B", "C", "C/K", "G", "K", "KL", "L", "P", "R", "Y"].map((value) => (
+                      {dischargeBaseSpecifiers.map((value) => (
                         <div key={value} className="flex items-center space-x-2">
-                          <RadioGroupItem value={value} id={`specifier-${value}`} />
-                          <Label htmlFor={`specifier-${value}`}>{value}</Label>
+                          <RadioGroupItem value={value} id={`discharge-specifier-${value}`} />
+                          <Label htmlFor={`discharge-specifier-${value}`}>{value}</Label>
                         </div>
                       ))}
                     </RadioGroup>
@@ -183,21 +214,47 @@ export default function ObservationForm({
             <div className="mt-2">
               <Label className="text-base mb-1 block">Secondary Observation</Label>
               <RadioGroup className="grid grid-cols-3 gap-2" onValueChange={setSecondaryObservation} value={secondaryObservation}>
-                {["0", "2", "2 W", "4", "6", "8", "10"].map((value) => (
+                {["0", "2", "4", "6", "8", "10"].map((value) => (
                   <div key={value} className="flex items-center space-x-2">
                     <RadioGroupItem value={value} id={`secondary-${value}`} />
                     <Label htmlFor={`secondary-${value}`}>{value}</Label>
                   </div>
                 ))}
               </RadioGroup>
-              {["6", "8", "10"].includes(secondaryObservation) && (
+              {secondaryObservation === "2" && (
+                <div className="mt-2">
+                  <Label className="mb-1 block">Secondary Specifier</Label>
+                  <RadioGroup className="grid grid-cols-2 gap-2" onValueChange={setSecondarySpecifier} value={secondarySpecifier}>
+                    {drySpecifiers.map((value) => (
+                      <div key={value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={value} id={`secondary-dry-specifier-${value}`} />
+                        <Label htmlFor={`secondary-dry-specifier-${value}`}>{value}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              )}
+              {secondaryObservation === "10" && (
+                <div className="mt-2">
+                  <Label className="mb-1 block">Secondary Specifier</Label>
+                  <RadioGroup className="grid grid-cols-3 gap-2" onValueChange={setSecondarySpecifier} value={secondarySpecifier}>
+                    {[...dischargeBaseSpecifiers, ...dischargeExtraSpecifiers].map((value) => (
+                      <div key={value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={value} id={`secondary-discharge-specifier-${value}`} />
+                        <Label htmlFor={`secondary-discharge-specifier-${value}`}>{value}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+              )}
+              {(["6", "8"].includes(secondaryObservation)) && (
                 <div className="mt-2">
                   <Label className="mb-1 block">Secondary Specifier</Label>
                   <RadioGroup className="grid grid-cols-5 gap-2" onValueChange={setSecondarySpecifier} value={secondarySpecifier}>
-                    {["B", "C", "C/K", "G", "K", "KL", "L", "P", "R", "Y"].map((value) => (
+                    {dischargeBaseSpecifiers.map((value) => (
                       <div key={value} className="flex items-center space-x-2">
-                        <RadioGroupItem value={value} id={`secondary-specifier-${value}`} />
-                        <Label htmlFor={`secondary-specifier-${value}`}>{value}</Label>
+                        <RadioGroupItem value={value} id={`secondary-discharge-specifier-${value}`} />
+                        <Label htmlFor={`secondary-discharge-specifier-${value}`}>{value}</Label>
                       </div>
                     ))}
                   </RadioGroup>

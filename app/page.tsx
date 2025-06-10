@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import type { Cycle } from "@/lib/types"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Calendar, ChevronLeft, ChevronRight } from "lucide-react"
@@ -11,6 +12,18 @@ import { getCurrentCycle, getPreviousCycle } from "@/lib/data"
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("chart")
+  const [cycle, setCycle] = useState<Cycle | null>(null)
+  const [previousCycle, setPreviousCycle] = useState<Cycle | null>(null)
+
+  useEffect(() => {
+    fetch("/api/cycle")
+      .then(res => res.json())
+      .then(data => setCycle(data))
+    // For mock/demo, use getPreviousCycle from lib/data
+    setPreviousCycle(getPreviousCycle())
+  }, [])
+
+  if (!cycle || !previousCycle) return <div className="p-8 text-center">Loading...</div>
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
@@ -52,7 +65,7 @@ export default function Home() {
 
           <TabsContent value="chart" className="space-y-4">
             <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border p-4">
-              <CycleChart cycle={getCurrentCycle()} />
+              <CycleChart cycle={cycle} />
             </div>
           </TabsContent>
 
@@ -64,7 +77,7 @@ export default function Home() {
 
           <TabsContent value="stats">
             <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border p-6">
-              <CycleStats cycle={getCurrentCycle()} />
+              <CycleStats cycle={cycle} />
             </div>
           </TabsContent>
         </Tabs>
@@ -72,7 +85,7 @@ export default function Home() {
         <div className="mt-8">
           <h3 className="text-lg font-medium mb-4">Previous Cycle</h3>
           <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border p-4">
-            <CycleChart cycle={getPreviousCycle()} />
+            <CycleChart cycle={previousCycle} />
           </div>
         </div>
       </main>

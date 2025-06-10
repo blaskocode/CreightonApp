@@ -10,20 +10,17 @@ interface CycleStatsProps {
 }
 
 export default function CycleStats({ cycle }: CycleStatsProps) {
-  // Calculate observation type counts
   const getObservationCounts = () => {
+    const obsArr = (cycle as any).observations ?? cycle.days
     const counts = {
       period: 0,
       dry: 0,
       discharge: 0,
-      total: cycle.days.length,
+      total: obsArr.length,
     }
-
-    cycle.days.forEach((day) => {
+    obsArr.forEach((day: { observation: string | null }) => {
       if (!day.observation) return
-
       const obs = day.observation.split(" ")[0]
-
       if (["H", "M", "L", "VL", "B"].includes(obs)) {
         counts.period++
       } else if (["0", "2", "2 W", "4"].includes(obs)) {
@@ -37,7 +34,6 @@ export default function CycleStats({ cycle }: CycleStatsProps) {
         counts.discharge++
       }
     })
-
     return counts
   }
 
@@ -93,7 +89,6 @@ export default function CycleStats({ cycle }: CycleStatsProps) {
             <Progress
               value={(counts.period / counts.total) * 100}
               className="h-2 bg-slate-200 dark:bg-slate-700"
-              indicatorClassName="bg-red-500"
             />
           </div>
 
@@ -105,7 +100,6 @@ export default function CycleStats({ cycle }: CycleStatsProps) {
             <Progress
               value={(counts.dry / counts.total) * 100}
               className="h-2 bg-slate-200 dark:bg-slate-700"
-              indicatorClassName="bg-green-500"
             />
           </div>
 
@@ -117,7 +111,6 @@ export default function CycleStats({ cycle }: CycleStatsProps) {
             <Progress
               value={(counts.discharge / counts.total) * 100}
               className="h-2 bg-slate-200 dark:bg-slate-700"
-              indicatorClassName="bg-slate-500"
             />
           </div>
         </div>

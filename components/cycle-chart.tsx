@@ -11,7 +11,17 @@ interface CycleChartProps {
 
 export default function CycleChart({ cycle }: CycleChartProps) {
   const [editingDay, setEditingDay] = useState<CycleDay | null>(null)
-  const [days, setDays] = useState<CycleDay[]>(cycle.days)
+  // Always use observations if present, else days, else empty array
+  const initialDays = Array.isArray((cycle as any).observations)
+    ? (cycle as any).observations.map((o: any) => ({
+        dayNumber: o.dayNumber,
+        date: o.date,
+        observation: o.observation,
+      }))
+    : Array.isArray(cycle.days)
+      ? cycle.days
+      : []
+  const [days, setDays] = useState<CycleDay[]>(initialDays)
 
   // Function to determine background color based on observation
   const getBackgroundColor = (day: CycleDay | null) => {
@@ -52,42 +62,82 @@ export default function CycleChart({ cycle }: CycleChartProps) {
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[768px]">
-        <div className="grid grid-cols-31 gap-1">
-          {/* Dates */}
+      <div className="min-w-[1200px]">
+        {/* Dates row */}
+        <div className="grid grid-cols-31 gap-1 mb-1">
           {Array.from({ length: 31 }, (_, i) => {
             const day = days.find((d) => d.dayNumber === i + 1) || null
-            // Format date as MM/DD if available
             let dateStr = ""
+            let dayDate: Date | null = null
             if (day && day.date) {
-              const dateObj = new Date(day.date)
-              dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`
+              dayDate = new Date(day.date)
+              dateStr = `${dayDate.getMonth() + 1}/${dayDate.getDate()}`
+            } else if (cycle.id === "current" && cycle.days.length > 0) {
+              const firstDay = cycle.days[0]
+              if (firstDay && firstDay.date) {
+                const baseDate = new Date(firstDay.date)
+                dayDate = new Date(baseDate)
+                dayDate.setDate(baseDate.getDate() + i)
+                dateStr = `${dayDate.getMonth() + 1}/${dayDate.getDate()}`
+              }
+            }
+            // Only show date for today and past days in current cycle
+            let showDate = false
+            if (cycle.id === "current" && dayDate) {
+              const today = new Date(); today.setHours(0,0,0,0);
+              if (dayDate.getTime() <= today.getTime()) showDate = true;
+            } else if (cycle.id !== "current") {
+              showDate = true;
             }
             return (
               <div
                 key={`date-${i + 1}`}
                 className="text-center text-[10px] text-slate-400 dark:text-slate-500 pb-0.5"
               >
-                {dateStr}
+                {showDate ? dateStr : ""}
               </div>
             )
           })}
-
-          {/* Day numbers */}
+        </div>
+        {/* Day numbers row */}
+        <div className="grid grid-cols-31 gap-1 mb-1">
           {Array.from({ length: 31 }, (_, i) => (
-            <div
-              key={`day-${i + 1}`}
-              className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1"
-            >
+            <div key={`daynum-${i + 1}`} className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1">
               {i + 1}
             </div>
           ))}
-
-          {/* Observations */}
+        </div>
+        {/* Observation boxes row */}
+        <div className="grid grid-cols-31 gap-1">
           {Array.from({ length: 31 }, (_, i) => {
             const day = days.find((d) => d.dayNumber === i + 1) || null
-            const isCurrentDay = i + 1 === cycle.currentDay && cycle.id === "current"
-            // Parse observation and frequency
+            let boxDate: Date | null = null
+            if (day && day.date) {
+              boxDate = new Date(day.date)
+            } else if (cycle.id === "current" && days.length > 0) {
+              const firstDay = days[0]
+              if (firstDay && firstDay.date) {
+                const baseDate = new Date(firstDay.date)
+                boxDate = new Date(baseDate)
+                boxDate.setDate(baseDate.getDate() + i)
+              }
+            }
+            const today = new Date()
+            today.setHours(0,0,0,0)
+            if (boxDate) boxDate.setHours(0,0,0,0)
+
+            let isCurrentDay = false
+            let isPastDay = false
+            let isFutureDay = false
+            if (cycle.id === "current" && boxDate) {
+              if (boxDate.getTime() === today.getTime()) {
+                isCurrentDay = true
+              } else if (boxDate.getTime() < today.getTime()) {
+                isPastDay = true
+              } else if (boxDate.getTime() > today.getTime()) {
+                isFutureDay = true
+              }
+            }
             let mainObs = ""
             let freq = ""
             if (day?.observation) {
@@ -100,16 +150,71 @@ export default function CycleChart({ cycle }: CycleChartProps) {
                 mainObs = day.observation
               }
             }
+            // Custom box class logic for current cycle
+            let boxClass = "h-12 flex flex-col items-center justify-center rounded border text-sm font-medium text-center cursor-pointer transition-colors duration-100";
+            if (cycle.id === "current") {
+              if (isPastDay && !day?.observation) {
+                // Past day, no observation: red fill, red ring, empty
+                boxClass = cn(
+                  boxClass,
+                  "bg-red-100 border-red-400 ring-2 ring-red-400 text-red-700 dark:bg-red-950/30 dark:text-red-400"
+                );
+              } else if (isCurrentDay && !day?.observation) {
+                // Today, no observation: blue ring, no fill
+                boxClass = cn(
+                  boxClass,
+                  "border-blue-500 ring-2 ring-blue-500 bg-white dark:bg-slate-800"
+                );
+              } else if (day && day.observation) {
+                boxClass = cn(
+                  boxClass,
+                  getBackgroundColor(day),
+                  getTextColor(day)
+                );
+              } else if (!day && isFutureDay) {
+                boxClass = cn(
+                  boxClass,
+                  "bg-white dark:bg-slate-800 text-slate-300 border-slate-200 dark:border-slate-700 cursor-default"
+                );
+              } else if (isCurrentDay) {
+                boxClass = cn(
+                  boxClass,
+                  getBackgroundColor(day),
+                  getTextColor(day),
+                  "ring-2 ring-blue-500 border-blue-500"
+                );
+              } else if (day) {
+                boxClass = cn(
+                  boxClass,
+                  getBackgroundColor(day),
+                  getTextColor(day)
+                );
+              }
+            } else {
+              // Not current cycle: use default logic
+              if (day && day.observation) {
+                boxClass = cn(
+                  boxClass,
+                  getBackgroundColor(day),
+                  getTextColor(day)
+                );
+              } else {
+                boxClass = cn(
+                  boxClass,
+                  "bg-white text-slate-300 border-slate-200 dark:bg-slate-800 dark:border-slate-700 cursor-default"
+                );
+              }
+            }
+            if (isFutureDay) {
+              mainObs = ""
+              freq = ""
+            }
             return (
               <div
                 key={`obs-${i + 1}`}
-                className={cn(
-                  "h-12 flex flex-col items-center justify-center rounded border text-sm font-medium text-center cursor-pointer",
-                  getBackgroundColor(day),
-                  getTextColor(day),
-                  isCurrentDay && "ring-2 ring-blue-500 border-blue-500"
-                )}
-                onClick={() => day && setEditingDay(day)}
+                className={boxClass}
+                onClick={() => (day ? setEditingDay(day) : (boxDate && (isPastDay || isCurrentDay) && setEditingDay({ dayNumber: i + 1, date: boxDate.toISOString().split("T")[0], observation: null })))}
+                style={{ pointerEvents: day ? 'auto' : 'none' }}
               >
                 <span className="flex flex-col items-center justify-center w-full h-full">
                   <span>{mainObs}</span>
@@ -164,16 +269,29 @@ export default function CycleChart({ cycle }: CycleChartProps) {
                   initialTab,
                 }
               })()}
-              onSave={({ observation, specifier, frequency, secondaryObservation, secondarySpecifier, date }) => {
+              onSave={async ({ observation, specifier, frequency, secondaryObservation, secondarySpecifier, date }) => {
                 let obsString = observation
                 if (frequency) {
                   obsString = obsString.trim() + ' ' + frequency
                 }
-                setDays((prev) => prev.map((d) =>
-                  d.dayNumber === editingDay.dayNumber
-                    ? { ...d, observation: obsString, date: date.toISOString().split("T")[0] }
-                    : d
-                ))
+                // Save to database via API
+                await fetch('/api/cycle', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    dayNumber: editingDay.dayNumber,
+                    date: date.toISOString().split("T")[0],
+                    observation: obsString
+                  })
+                })
+                // Refresh the days from API
+                const res = await fetch('/api/cycle')
+                const updatedCycle = await res.json()
+                setDays((updatedCycle.observations as Array<{ dayNumber: number; date: string; observation: string | null }> ).map((o) => ({
+                  dayNumber: o.dayNumber,
+                  date: o.date,
+                  observation: o.observation
+                })))
                 setEditingDay(null)
               }}
               onCancel={() => setEditingDay(null)}
