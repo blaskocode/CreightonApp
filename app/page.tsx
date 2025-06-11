@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { PlusCircle, Calendar, ChevronLeft, ChevronRight } from "lucide-react"
 import CycleChart from "@/components/cycle-chart"
-import NewEntryForm from "@/components/new-entry-form"
 import CycleStats from "@/components/cycle-stats"
 import { getCurrentCycle, getPreviousCycle } from "@/lib/data"
 import { addDays, format } from "date-fns"
@@ -167,6 +166,34 @@ export default function Home() {
     );
   }
 
+  async function refreshPreviousCycles() {
+    // Fetch previous cycles from backend
+    fetch("/api/cycle?all=1")
+      .then(res => res.json())
+      .then(data => {
+        function toYMD(date: string) {
+          return date ? date.split('T')[0] : '';
+        }
+        setPreviousCycles(
+          Array.isArray(data)
+            ? data.map((cycle: any) => ({
+                id: String(cycle.id),
+                startDate: toYMD(cycle.startDate),
+                endDate: cycle.endDate ? toYMD(cycle.endDate) : null,
+                currentDay: Array.isArray(cycle.observations) ? cycle.observations.length : 0,
+                days: Array.isArray(cycle.observations)
+                  ? cycle.observations.map((o: any) => ({
+                      dayNumber: o.dayNumber,
+                      date: toYMD(o.date),
+                      observation: o.observation ?? null
+                    }))
+                  : []
+              }))
+            : []
+        );
+      });
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <header className="border-b bg-white dark:bg-slate-950 sticky top-0 z-10">
@@ -178,13 +205,7 @@ export default function Home() {
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
             <h2 className="text-lg font-medium">Current Cycle</h2>
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
           <Button onClick={handleNewCycle}>
             <PlusCircle className="h-4 w-4 mr-2" />
@@ -215,12 +236,10 @@ export default function Home() {
             </div>
           </div>
           <div className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border p-4">
-            {previousCycles.length > 0 && <CycleChart cycle={previousCycles[prevCycleIndex]} editable={editPrev} />}
+            {previousCycles.length > 0 && <CycleChart cycle={previousCycles[prevCycleIndex]} editable={editPrev} onObservationSaved={refreshPreviousCycles} />}
             {previousCycles.length === 0 && <div className="text-center text-slate-400">No previous cycles</div>}
           </div>
         </div>
-
-        <NewEntryForm onEntrySaved={refreshCycle} />
       </main>
     </div>
   )

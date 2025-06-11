@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { promises as fs } from 'fs';
+import path from 'path';
 
 const prisma = new PrismaClient()
 
@@ -23,9 +25,21 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const { dayNumber, date, observation } = await req.json()
-  // Find the most recent cycle
-  const cycle = await prisma.cycle.findFirst({ orderBy: { startDate: 'desc' } })
+  const { dayNumber, date, observation, cycleId } = await req.json()
+  // Backend validation: check if observation is valid
+  const filePath = path.join(process.cwd(), 'OnlyValidOptions.txt');
+  const file = await fs.readFile(filePath, 'utf-8');
+  const validOptions = new Set(file.split('\n').map(line => line.trim()).filter(Boolean));
+  if (!validOptions.has(observation)) {
+    return NextResponse.json({ error: 'Invalid observation option' }, { status: 400 });
+  }
+  // Find the correct cycle
+  let cycle;
+  if (cycleId) {
+    cycle = await prisma.cycle.findUnique({ where: { id: Number(cycleId) } });
+  } else {
+    cycle = await prisma.cycle.findFirst({ orderBy: { startDate: 'desc' } });
+  }
   if (!cycle) {
     return NextResponse.json({ error: 'No cycle found' }, { status: 404 })
   }
@@ -53,6 +67,20 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // If the request includes an observation, validate it
+  let observation = null;
+  try {
+    const body = await req.json();
+    observation = body.observation;
+  } catch {}
+  if (observation) {
+    const filePath = path.join(process.cwd(), 'OnlyValidOptions.txt');
+    const file = await fs.readFile(filePath, 'utf-8');
+    const validOptions = new Set(file.split('\n').map(line => line.trim()).filter(Boolean));
+    if (!validOptions.has(observation)) {
+      return NextResponse.json({ error: 'Invalid observation option' }, { status: 400 });
+    }
+  }
   // Find the most recent cycle
   const current = await prisma.cycle.findFirst({
     orderBy: { startDate: 'desc' },
