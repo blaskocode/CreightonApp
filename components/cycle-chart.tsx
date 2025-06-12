@@ -24,20 +24,23 @@ function parseISODateToUTC(dateStr: string): Date {
 }
 
 // Helper function for background color
-function getObservationBg(observation: string) {
+function getObservationBg(observation: string, dayNumber: number, peakDay: number) {
   // Extract the primary observation (first part)
   const primary = observation.split(' ')[0];
   if (["H", "M", "L", "VL", "B"].includes(primary)) {
     return "bg-red-50 dark:bg-red-950/20";
-  } else if (["0", "2", "2W", "2 W", "4"].includes(primary)) {
-    return "bg-green-50 dark:bg-green-950/20";
+  } else if (["Y", "B", "G", "P"].some(s => primary.includes(s))) {
+    return "bg-yellow-50 dark:bg-yellow-950/20";
   } else if (
     primary.startsWith("6") ||
     primary.startsWith("8") ||
-    primary.startsWith("10") ||
-    ["10DL", "10SL", "10WL"].includes(primary)
+    primary.startsWith("10")
   ) {
     return "bg-white dark:bg-slate-800";
+  } else if ((dayNumber == peakDay + 1 || dayNumber == peakDay + 2 || dayNumber == peakDay + 3) && ["0", "2", "2W", "4"].includes(primary)) {
+    return "bg-green-50 dark:bg-green-950/20";
+  } else if (["0", "2", "2W", "4"].includes(primary)) {
+    return "bg-green-100 dark:bg-green-950/30";
   }
   return "";
 }
@@ -58,8 +61,7 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
     } else if (
       obs.startsWith("6") ||
       obs.startsWith("8") ||
-      obs.startsWith("10") ||
-      ["10DL", "10SL", "10WL"].includes(obs)
+      obs.startsWith("10")
     ) {
       return "bg-white dark:bg-slate-800"
     }
@@ -80,6 +82,30 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
     } else {
       return "text-slate-700 dark:text-slate-300"
     }
+  }
+
+  const getPeakDay = () => {
+    const peakDay = cycle.days.reduce((max, day) => {
+      if (day.observation && /[KSL]/.test(day.observation)) {
+        return Math.max(max, day.dayNumber);
+      }
+      return max;
+    }, 0);
+    // Only return peakDay if the next day has a valid entry
+    if (peakDay > 0 && cycle.days.some(day => (day.dayNumber === peakDay + 1) && day.observation)) {
+      return peakDay;
+    }
+    return -5;
+  }
+
+  const getPeakPlus = (i: number) => {
+    const peakDay = getPeakDay();
+    const peakPlusDay = peakDay + i;
+    // Only return peakPlusDay if the next day has a valid entry
+    if (peakDay > 0 && cycle.days.some(day => (day.dayNumber === peakPlusDay) && day.observation)) {
+      return peakPlusDay;
+    }
+    return -5;
   }
 
   // Calculate number of boxes: up to today or 31, whichever is greater
@@ -125,6 +151,17 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
     const totalCols = 31;
     return (
       <>
+        {/* Day numbers row */}
+        <div className="grid grid-cols-31 gap-1 mb-1">
+          {Array.from({ length: count }, (_, i) => (
+            <div key={`daynum-${offset + i + 1}`} className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1">
+              {offset + i + 1}
+            </div>
+          ))}
+          {Array.from({ length: totalCols - count }).map((_, i) => (
+            <div key={`daynum-empty-${offset + count + i + 1}`} />
+          ))}
+        </div>
         {/* Dates row */}
         <div className="grid grid-cols-31 gap-1 mb-1">
           {getBoxData(offset, count).map(({ idx, dateStr, showDate }) => (
@@ -137,17 +174,6 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
           ))}
           {Array.from({ length: totalCols - count }).map((_, i) => (
             <div key={`date-empty-${offset + count + i + 1}`} />
-          ))}
-        </div>
-        {/* Day numbers row */}
-        <div className="grid grid-cols-31 gap-1 mb-1">
-          {Array.from({ length: count }, (_, i) => (
-            <div key={`daynum-${offset + i + 1}`} className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1">
-              {offset + i + 1}
-            </div>
-          ))}
-          {Array.from({ length: totalCols - count }).map((_, i) => (
-            <div key={`daynum-empty-${offset + count + i + 1}`} />
           ))}
         </div>
         {/* Observation boxes row */}
@@ -278,7 +304,7 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
                   isEditable && "hover:border-blue-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2",
                   !isEditable && "opacity-50",
                   // Color logic for observation
-                  day?.observation && getObservationBg(day.observation)
+                  day?.observation && getObservationBg(day.observation, day.dayNumber, getPeakDay())
                 )}
                 style={{ minWidth: 0 }}
                 onClick={() => {
@@ -327,6 +353,14 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
           })}
           {Array.from({ length: totalCols - count }).map((_, i) => (
             <div key={`box-empty-${offset + count + i + 1}`} />
+          ))}
+        </div>
+        {/* Peak and 1, 2, 3 row */}
+        <div className="grid grid-cols-31 gap-1 mb-1">
+          {Array.from({ length: count }, (_, i) => (
+            <div key={`daynum-${offset + i + 1}`} className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1">
+              {getPeakDay() - 1 == i ? "P" : getPeakPlus(1) - 1 == i ? "1" : getPeakPlus(2) - 1 == i ? "2" : getPeakPlus(3) - 1 == i ? "3" : ""}
+            </div>
           ))}
         </div>
       </>
@@ -391,7 +425,7 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
                   // Determine tab
                   if (["0", "2", "4"].includes(initialObservation)) {
                     initialTab = "dry";
-                  } else if (["6", "8", "10", "10DL", "10SL", "10WL"].some(type => initialObservation.startsWith(type))) {
+                  } else if (["6", "8", "10"].some(type => initialObservation.startsWith(type))) {
                     initialTab = "discharge";
                   } else {
                     initialTab = "period";

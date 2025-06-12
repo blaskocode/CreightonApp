@@ -28,8 +28,7 @@ export default function CycleStats({ cycle }: CycleStatsProps) {
       } else if (
         obs.startsWith("6") ||
         obs.startsWith("8") ||
-        obs.startsWith("10") ||
-        ["10DL", "10SL", "10WL"].includes(obs)
+        obs.startsWith("10")
       ) {
         counts.discharge++
       }

@@ -42,38 +42,35 @@ export default function ObservationForm({
   onCancel,
 }: ObservationFormProps) {
   const [primaryObservation, setPrimaryObservation] = useState(initialObservation)
-  const [specifier, setSpecifier] = useState(initialSpecifier)
+  const [specifiers, setSpecifiers] = useState<string[]>(initialSpecifier ? initialSpecifier.split("") : [])
   const [frequency, setFrequency] = useState(initialFrequency)
   const [secondaryObservation, setSecondaryObservation] = useState(initialSecondaryObservation)
-  const [secondarySpecifier, setSecondarySpecifier] = useState(initialSecondarySpecifier)
+  const [secondarySpecifiers, setSecondarySpecifiers] = useState<string[]>(initialSecondarySpecifier ? initialSecondarySpecifier.split("") : [])
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate)
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState(initialTab)
   const [secondaryTab, setSecondaryTab] = useState("dry")
-  const [validObservationOptions, setValidObservationOptions] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     setPrimaryObservation(initialObservation)
-    setSpecifier(initialSpecifier)
+    setSpecifiers(initialSpecifier ? initialSpecifier.split("") : [])
     setFrequency(initialFrequency)
     setSecondaryObservation(initialSecondaryObservation)
-    setSecondarySpecifier(initialSecondarySpecifier)
+    setSecondarySpecifiers(initialSecondarySpecifier ? initialSecondarySpecifier.split("") : [])
     setSelectedDate(initialDate)
     setActiveTab(initialTab)
     setSecondaryTab("dry")
   }, [initialObservation, initialSpecifier, initialFrequency, initialSecondaryObservation, initialSecondarySpecifier, initialDate, initialTab])
 
-  useEffect(() => {
-    fetch('/api/valid-observations')
-      .then(res => res.json())
-      .then((data: string[]) => setValidObservationOptions(new Set(data)));
-  }, []);
-
   // Clear secondary observation/specifier for H, M, Dry, or Discharge primary
   useEffect(() => {
-    if (["H", "M", "0", "2", "4", "6", "8", "10", "10DL", "10SL", "10WL"].includes(primaryObservation)) {
+    if (["H", "M", "L", "VL", "B"].includes(primaryObservation)) {
+      setSpecifiers([]);
+      setFrequency("");
+    }
+    if (["H", "M", "0", "2", "4", "6", "8", "10"].includes(primaryObservation)) {
       setSecondaryObservation("");
-      setSecondarySpecifier("");
+      setSecondarySpecifiers([]);
     }
   }, [primaryObservation]);
 
@@ -81,19 +78,21 @@ export default function ObservationForm({
   const needsSecondary = ["L", "VL", "B"].includes(primaryObservation)
 
   const getBackgroundColor = () => {
+    // const allSpecifiers = [...specifiers, ...secondarySpecifiers];
     if (["H", "M", "L", "VL", "B"].includes(primaryObservation)) {
-      return "bg-red-50 dark:bg-red-950/20"
-    } else if (["0", "2", "2 W", "4"].includes(primaryObservation)) {
-      return "bg-green-50 dark:bg-green-950/20"
+      return "bg-red-50 dark:bg-red-950/20";
+    } else if (["Y", "B", "G", "P"].some(s => specifiers.includes(s))) {
+      return "bg-yellow-50 dark:bg-yellow-950/20";
+    } else if (["0", "2", "2W","4"].includes(primaryObservation)) {
+      return "bg-green-100 dark:bg-green-950/20";
     } else if (
       primaryObservation.startsWith("6") ||
       primaryObservation.startsWith("8") ||
-      primaryObservation.startsWith("10") ||
-      ["10DL", "10SL", "10WL"].includes(primaryObservation)
+      primaryObservation.startsWith("10")
     ) {
-      return "bg-white dark:bg-slate-800"
+      return "bg-white dark:bg-slate-800";
     }
-    return ""
+    return "";
   }
 
   // Helper: parse primary+specifier from observation string
@@ -106,7 +105,7 @@ export default function ObservationForm({
       if (obs === "2") return { primary: "2", specifier: "" };
       if (obs === "2W") return { primary: "2", specifier: "W" };
     }
-    // For discharge: 6, 8, 10, 10DL, 10SL, 10WL, etc.
+    // For discharge: 6, 8, 10
     const match = obs.match(/^(6|8|10)([A-Z]*)$/);
     if (match) {
       return { primary: match[1], specifier: match[2] || "" };
@@ -116,25 +115,20 @@ export default function ObservationForm({
 
   const getFormattedEntry = () => {
     let entry = primaryObservation;
-    // For 2W, concatenate specifier to primary
-    if (primaryObservation === "2" && specifier === "W") {
-      entry = "2W";
-    } else if (specifier && ["6", "8", "10"].includes(primaryObservation)) {
-      entry = primaryObservation + specifier;
+    if (specifiers.length > 0) {
+      entry += specifiers.join("");
     }
-    // Add secondary observation and specifier if present
     if (secondaryObservation) {
-      entry += ` ${secondaryObservation}${secondarySpecifier ? secondarySpecifier : ''}`;
+      entry += ` ${secondaryObservation}${secondarySpecifiers.length > 0 ? secondarySpecifiers.join("") : ''}`;
     }
-    // Add frequency if present and not H/M
     if (frequency && !["H", "M"].includes(primaryObservation)) {
       entry += ` ${frequency}`;
     }
     return entry;
   };
 
-  const dryTypes = ["0", "2", "2 W", "4"]
-  const dischargeTypes = ["6", "8", "10", "10DL", "10SL", "10WL"]
+  const dryTypes = ["0", "2", "4"]
+  const dischargeTypes = ["6", "8", "10"]
   const frequencyRequired =
     dryTypes.includes(primaryObservation) ||
     dischargeTypes.includes(primaryObservation) ||
@@ -143,8 +137,8 @@ export default function ObservationForm({
 
   // Specifier logic helpers
   const drySpecifiers = ["W"]
-  const dischargeBaseSpecifiers = ["B", "C", "C/K", "G", "K", "KL", "L", "P", "R", "Y"]
-  const dischargeExtraSpecifiers = ["DL", "SL", "WL"]
+  const dischargeBaseSpecifiers = ["B", "C", "G", "K", "L", "P", "R", "Y"]
+  const dischargeExtraSpecifiers = ["D", "S", "W"]
 
   // Clear specifier if not valid for the current primary observation
   useEffect(() => {
@@ -158,8 +152,8 @@ export default function ObservationForm({
     } else {
       validSpecifiers = [];
     }
-    if (specifier && !validSpecifiers.includes(specifier)) {
-      setSpecifier("");
+    if (specifiers.length > 0 && !validSpecifiers.every(s => specifiers.includes(s))) {
+      setSpecifiers(specifiers.filter(s => validSpecifiers.includes(s)));
     }
   }, [primaryObservation]);
 
@@ -175,8 +169,8 @@ export default function ObservationForm({
     } else {
       validSpecifiers = [];
     }
-    if (secondarySpecifier && !validSpecifiers.includes(secondarySpecifier)) {
-      setSecondarySpecifier("");
+    if (secondarySpecifiers.length > 0 && !validSpecifiers.every(s => secondarySpecifiers.includes(s))) {
+      setSecondarySpecifiers(secondarySpecifiers.filter(s => validSpecifiers.includes(s)));
     }
   }, [secondaryObservation]);
 
@@ -189,8 +183,8 @@ export default function ObservationForm({
       return;
     }
     // 2. If primary or secondary is 6, 8, or 10, require a specifier
-    if ((["6", "8", "10"].includes(primaryObservation) && !specifier) ||
-        (["6", "8", "10"].includes(secondaryObservation) && !secondarySpecifier)) {
+    if ((["6", "8", "10"].includes(primaryObservation) && specifiers.length === 0) ||
+        (["6", "8", "10"].includes(secondaryObservation) && secondarySpecifiers.length === 0)) {
       setError("A specifier is required for all Discharge (6, 8, 10) observations.");
       return;
     }
@@ -199,21 +193,25 @@ export default function ObservationForm({
       setError("Frequency is required for all Dry and Discharge observations.");
       return;
     }
-    // 4. Observation string must match valid options
-    const obsString = getFormattedEntry();
-    if (!validObservationOptions.has(obsString)) {
-      setError("This observation is not a valid option.");
-      return;
-    }
     onSave({
-      observation: obsString,
-      specifier,
+      observation: getFormattedEntry(),
+      specifier: specifiers.join(""),
       frequency,
       secondaryObservation,
-      secondarySpecifier,
+      secondarySpecifier: secondarySpecifiers.join(""),
       date: selectedDate || new Date(),
     });
   };
+
+  const handleClear = () => {
+    setPrimaryObservation("");
+    setSpecifiers([]);
+    setFrequency("");
+    setSecondaryObservation("");
+    setSecondarySpecifiers([]);
+  }
+
+  const dischargeSpecifiers = primaryObservation === "10" ? [...dischargeBaseSpecifiers, ...dischargeExtraSpecifiers] : dischargeBaseSpecifiers;
 
   return (
     <div className="space-y-4 md:space-y-0 md:flex md:flex-wrap md:gap-8 md:items-start min-w-0">
@@ -249,15 +247,25 @@ export default function ObservationForm({
                 </RadioGroup>
                 {primaryObservation === "2" && (
                   <div className="mt-2">
-                    <Label className="mb-1 block">Specifier</Label>
-                    <RadioGroup className="grid grid-cols-2 gap-2" onValueChange={setSpecifier} value={specifier}>
+                    <Label className="mb-1 block">Specifier(s)</Label>
+                    <div className="flex flex-wrap gap-2 mt-2">
                       {drySpecifiers.map((value) => (
-                        <div key={value} className="flex items-center space-x-2">
-                          <RadioGroupItem value={value} id={`dry-specifier-${value}`} />
-                          <Label htmlFor={`dry-specifier-${value}`}>{value}</Label>
-                        </div>
+                        <label key={value} className="flex items-center space-x-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={specifiers.includes(value)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setSpecifiers([...specifiers, value]);
+                              } else {
+                                setSpecifiers(specifiers.filter(s => s !== value));
+                              }
+                            }}
+                          />
+                          <span>{value}</span>
+                        </label>
                       ))}
-                    </RadioGroup>
+                    </div>
                   </div>
                 )}
               </TabsContent>
@@ -271,29 +279,49 @@ export default function ObservationForm({
                   ))}
                 </RadioGroup>
                 {primaryObservation === "10" && (
-                  <div className="mt-2">
-                    <Label className="mb-1 block">Specifier</Label>
-                    <RadioGroup className="grid grid-cols-3 gap-2" onValueChange={setSpecifier} value={specifier}>
-                      {[...dischargeBaseSpecifiers, ...dischargeExtraSpecifiers].map((value) => (
-                        <div key={value} className="flex items-center space-x-2">
-                          <RadioGroupItem value={value} id={`discharge-specifier-${value}`} />
-                          <Label htmlFor={`discharge-specifier-${value}`}>{value}</Label>
-                        </div>
+                  <div className="mt-4">
+                    <Label>Specifier(s)</Label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {dischargeSpecifiers.map((value) => (
+                        <label key={value} className="flex items-center space-x-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={specifiers.includes(value)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setSpecifiers([...specifiers, value]);
+                              } else {
+                                setSpecifiers(specifiers.filter(s => s !== value));
+                              }
+                            }}
+                          />
+                          <span>{value}</span>
+                        </label>
                       ))}
-                    </RadioGroup>
+                    </div>
                   </div>
                 )}
                 {(["6", "8"].includes(primaryObservation)) && (
-                  <div className="mt-2">
-                    <Label className="mb-1 block">Specifier</Label>
-                    <RadioGroup className="grid grid-cols-5 gap-2" onValueChange={setSpecifier} value={specifier}>
+                  <div className="mt-4">
+                    <Label>Specifier(s)</Label>
+                    <div className="flex flex-wrap gap-2 mt-2">
                       {dischargeBaseSpecifiers.map((value) => (
-                        <div key={value} className="flex items-center space-x-2">
-                          <RadioGroupItem value={value} id={`discharge-specifier-${value}`} />
-                          <Label htmlFor={`discharge-specifier-${value}`}>{value}</Label>
-                        </div>
+                        <label key={value} className="flex items-center space-x-1 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={specifiers.includes(value)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setSpecifiers([...specifiers, value]);
+                              } else {
+                                setSpecifiers(specifiers.filter(s => s !== value));
+                              }
+                            }}
+                          />
+                          <span>{value}</span>
+                        </label>
                       ))}
-                    </RadioGroup>
+                    </div>
                   </div>
                 )}
               </TabsContent>
@@ -322,15 +350,25 @@ export default function ObservationForm({
                   </RadioGroup>
                   {secondaryObservation === "2" && (
                     <div className="mt-4">
-                      <Label>Secondary Specifier</Label>
-                      <RadioGroup className="grid grid-cols-2 gap-2 mt-2" onValueChange={setSecondarySpecifier} value={secondarySpecifier}>
+                      <Label>Secondary Specifier(s)</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
                         {drySpecifiers.map((value) => (
-                          <div key={value} className="flex items-center space-x-2">
-                            <RadioGroupItem value={value} id={`secondary-dry-specifier-${value}`} />
-                            <Label htmlFor={`secondary-dry-specifier-${value}`}>{value}</Label>
-                          </div>
+                          <label key={value} className="flex items-center space-x-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={secondarySpecifiers.includes(value)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSecondarySpecifiers([...secondarySpecifiers, value]);
+                                } else {
+                                  setSecondarySpecifiers(secondarySpecifiers.filter(s => s !== value));
+                                }
+                              }}
+                            />
+                            <span>{value}</span>
+                          </label>
                         ))}
-                      </RadioGroup>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -349,28 +387,48 @@ export default function ObservationForm({
                   </RadioGroup>
                   {secondaryObservation === "10" && (
                     <div className="mt-4">
-                      <Label>Secondary Specifier</Label>
-                      <RadioGroup className="grid grid-cols-3 gap-2 mt-2" onValueChange={setSecondarySpecifier} value={secondarySpecifier}>
-                        {[...dischargeBaseSpecifiers, ...dischargeExtraSpecifiers].map((value) => (
-                          <div key={value} className="flex items-center space-x-2">
-                            <RadioGroupItem value={value} id={`secondary-discharge-specifier-${value}`} />
-                            <Label htmlFor={`secondary-discharge-specifier-${value}`}>{value}</Label>
-                          </div>
+                      <Label>Secondary Specifier(s)</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {dischargeBaseSpecifiers.map((value) => (
+                          <label key={value} className="flex items-center space-x-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={secondarySpecifiers.includes(value)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSecondarySpecifiers([...secondarySpecifiers, value]);
+                                } else {
+                                  setSecondarySpecifiers(secondarySpecifiers.filter(s => s !== value));
+                                }
+                              }}
+                            />
+                            <span>{value}</span>
+                          </label>
                         ))}
-                      </RadioGroup>
+                      </div>
                     </div>
                   )}
                   {["6", "8"].includes(secondaryObservation) && (
                     <div className="mt-4">
-                      <Label>Secondary Specifier</Label>
-                      <RadioGroup className="grid grid-cols-5 gap-2 mt-2" onValueChange={setSecondarySpecifier} value={secondarySpecifier}>
+                      <Label>Secondary Specifier(s)</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
                         {dischargeBaseSpecifiers.map((value) => (
-                          <div key={value} className="flex items-center space-x-2">
-                            <RadioGroupItem value={value} id={`secondary-discharge-specifier-${value}`} />
-                            <Label htmlFor={`secondary-discharge-specifier-${value}`}>{value}</Label>
-                          </div>
+                          <label key={value} className="flex items-center space-x-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={secondarySpecifiers.includes(value)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSecondarySpecifiers([...secondarySpecifiers, value]);
+                                } else {
+                                  setSecondarySpecifiers(secondarySpecifiers.filter(s => s !== value));
+                                }
+                              }}
+                            />
+                            <span>{value}</span>
+                          </label>
                         ))}
-                      </RadioGroup>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -394,8 +452,11 @@ export default function ObservationForm({
           )}
         </div>
         <div className="flex gap-2 mt-6">
-          <Button className="w-full" size="lg" disabled={!primaryObservation || (frequencyRequired && !frequency)} onClick={handleSave}>
+          <Button className="w-full" size="lg" disabled={(frequencyRequired && !frequency)} onClick={handleSave}>
             Save Entry
+          </Button>
+          <Button className="w-full" size="lg" variant="outline" onClick={handleClear}>
+            Clear Entry
           </Button>
           {onCancel && (
             <Button className="w-full" size="lg" variant="outline" onClick={onCancel}>

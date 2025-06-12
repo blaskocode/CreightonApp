@@ -26,13 +26,6 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const { dayNumber, date, observation, cycleId } = await req.json()
-  // Backend validation: check if observation is valid
-  const filePath = path.join(process.cwd(), 'OnlyValidOptions.txt');
-  const file = await fs.readFile(filePath, 'utf-8');
-  const validOptions = new Set(file.split('\n').map(line => line.trim()).filter(Boolean));
-  if (!validOptions.has(observation)) {
-    return NextResponse.json({ error: 'Invalid observation option' }, { status: 400 });
-  }
   // Find the correct cycle
   let cycle;
   if (cycleId) {
