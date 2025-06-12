@@ -126,7 +126,7 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
     return (
       <>
         {/* Dates row */}
-        <div className={`grid grid-cols-${totalCols} gap-1 mb-1`}>
+        <div className="grid grid-cols-31 gap-1 mb-1">
           {getBoxData(offset, count).map(({ idx, dateStr, showDate }) => (
             <div
               key={`date-${idx + 1}`}
@@ -140,7 +140,7 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
           ))}
         </div>
         {/* Day numbers row */}
-        <div className={`grid grid-cols-${totalCols} gap-1 mb-1`}>
+        <div className="grid grid-cols-31 gap-1 mb-1">
           {Array.from({ length: count }, (_, i) => (
             <div key={`daynum-${offset + i + 1}`} className="text-center text-xs font-medium text-slate-500 dark:text-slate-400 py-1">
               {offset + i + 1}
@@ -151,7 +151,7 @@ export default function CycleChart({ cycle, editable, onObservationSaved }: Cycl
           ))}
         </div>
         {/* Observation boxes row */}
-        <div className={`grid grid-cols-${totalCols} gap-1 w-full`}>
+        <div className="grid grid-cols-31 gap-1 w-full">
           {Array.from({ length: count }).map((_, i) => {
             const idx = offset + i;
             // isEditable must be declared before use
